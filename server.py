@@ -1,22 +1,24 @@
 import argparse
 import api
 import socket
+import threading
 
 # Used assignment 2 as a reference for the server code
 
-def server(host, port):
-    # Create a QUIC socket
-    # 'with' closes the socket when the "block" is exited
-    # Create a new socket over IPv4 using UDP
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as server_socket:
+class Server:
+    def __init__(self, server_address):
+        self.server_address = server_address
+        self.connection_id = 1  # Connection ID - using 1 bit in our implementation to allow only 2 connection IDs
+        # Create a QUIC socket
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)      # UDP socket
         # allow the socket to be bound to an address that is already in use (if the server was restarted)
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # Assign address and port to the server's socket
-        server_socket.bind((host, port))
+        self.socket.bind(server_address)
 
-        print(f'Server is listening on {host}:{port}')
+        print(f'Server is listening on {server_address[0]}:{server_address[1]}')
 
+    def receive_data(self):
         while True:
             try:
                 # "Establish connection with client."
@@ -55,7 +57,7 @@ def server(host, port):
 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(
-        description='A Quic Server.')
+        description='A QUIC Server.')
 
     arg_parser.add_argument('-p', '--port', type=int,
                             default=api.DEFAULT_SERVER_PORT, help='The port to listen on.')
@@ -67,4 +69,4 @@ if __name__ == '__main__':
     host = args.host
     port = args.port
 
-    server(host, port)
+    Server((host, port))
