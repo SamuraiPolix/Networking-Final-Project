@@ -49,9 +49,7 @@ DATA = 4
 # Connection IDs explaied
 
 class QuicPacket:
-    sequence = 0 ;   # static variable to keep track of the overall sequence number
-
-    def __init__(self, source_id, destination_id, payload):
+    def __init__(self, source_id, destination_id, payload, stream_id, pos_in_stream):
         # Check if payload is a handshake, end connection or data packet
         if payload == "handshake":
             self.packet_type = HANDSHAKE
@@ -76,15 +74,20 @@ class QuicPacket:
         # TODO add stream ID?
         self.payload_length = len(payload)       # used instead of above comment, Payload Length (0..2^16-1, 16 bits)
         self.payload = payload                   # Payload (0..2^16-1)
+
+        # TODO NEEDED?
+        self.stream_id = stream_id
+        self.pos_in_stream = pos_in_stream
     
     def __str__(self):
         return f"Packet Type: {self.packet_type_str()}, Header Form: {self.header_form_str()}, Destination Connection ID: {self.destination_connection_id}, Source Connection ID: {self.source_connection_id}, Payload Length: {self.payload_length}, Payload: {self.payload[:10]} ... {self.payload[-10:]}" 
     
     def sendto(self, sock, address):
         # Pack the packet and send it to the address
-        data = self.pack()
-        sock.sendto(data, address)
-        print(f"Sent packet to {address}: {self}")
+        # TODO encode?
+        packed_packet = self.pack()
+        sock.sendto(packed_packet, address)
+        print(f"Stream {self.stream_id} - Packet #{self.pos_in_stream} sent to {address}: {self}")
     '''
     Packing and unpacking:
     !: represents network byte order (big-endian)
