@@ -3,27 +3,27 @@ import subprocess
 import time
 import matplotlib.pyplot as plt
 
-def start_server():
+def start_server(port=9997):
     # Start the server as a background process
-    server_process = subprocess.Popen(["python3", "server.py"])
+    server_process = subprocess.Popen(["python3", "server.py", "--port", str(port)])
     return server_process
 
-def start_client(num_of_files=1):
+def start_client(num_of_files=1, port=9997):
     # Start the client as a background process
-    client_process = subprocess.Popen(["python3", "client.py", "--files", str(num_of_files)])
+    client_process = subprocess.Popen(["python3", "client.py", "--files", str(num_of_files), "--port", str(port)])
     return client_process
 
 def main():
-    for i in range(1, 2):
+    for i in range(1, 11):
         # Start server
-        server = start_server()
+        server = start_server(9980+i)
 
         # wait for server to start
         time.sleep(1)
 
         print(f"Running test, with {i} files (streams)...")
         # Start client
-        client = start_client(i)
+        client = start_client(i, 9980+i)
 
         # Wait client to finish
         client.wait()
