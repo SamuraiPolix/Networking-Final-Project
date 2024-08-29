@@ -2,6 +2,7 @@ import argparse
 import api
 import socket
 import threading
+import time
 
 # Used assignment 2 as a reference for the server code
 
@@ -16,44 +17,85 @@ class Server:
         # Assign address and port to the server's socket
         self.socket.bind(server_address)
 
-        print(f'Server is listening on {server_address[0]}:{server_address[1]}')
+        self.streams_data = {}  # Dict to store file transfers by stream ID
+        # store for each stream the number of packets and bytes received
+        self.streams_stats = {}
 
-    def receive_data(self):
+        # Used to make sure only one thread can modify a shared data at the same time (the thread that "holds the lock")
+        # self.lock = threading.Lock()
+
+        self.run()
+
+    def handle_client(self, quic_packet, client_address, stream_id):
+        bytes_received = 0
+        packets_received = 0
+
+        # print(f"Received packet from {client_address}: {quic_packet}")
+
+        stream_id = quic_packet.stream_id
+        
+        if stream_id not in self.streams_data:
+            self.streams_data[stream_id] = []
+
+        self.streams_data[stream_id].append((quic_packet.pos_in_stream, quic_packet.non_binary_payload))
+
+        # If the packet signals the end of the stream, save the file (for testing purposes)
+        if quic_packet.packet_type == api.END_STREAM:
+            # Set end time for the stream
+            self.streams_stats[stream_id]['end_time'] = time.time()
+            # data_rate, packet_rate = calculate_stats(start_time, bytes_received, packets_received)
+            print(f"Stream {stream_id} completed:")
+            print(f" - Bytes received: {self.streams_stats[stream_id]['bytes_received']}")
+            print(f" - Packets received: {self.streams_stats[stream_id]['packets_received']}")
+            # print(f" - Data rate: {data_rate:.2f} B/s")
+            # print(f" - Packet rate: {packet_rate:.2f} packets/s")
+
+            # self.save_file(stream_id)           # Not required
+
+        else:   # add stats for the stream
+            if stream_id not in self.streams_stats:
+                self.streams_stats[stream_id] = {
+                    'start_time': time.time(),      # Start time of the stream
+                    'end_time': None,               # End time of the stream
+                    'bytes_received': bytes_received,
+                    'packets_received': packets_received
+                }
+            else:
+                self.streams_stats[stream_id]['bytes_received'] += len(quic_packet.payload)
+                self.streams_stats[stream_id]['packets_received'] += 1
+        
+    def run(self):
+        print(f"Server running on {self.server_address[0]}:{self.server_address[1]}")
+        stream_id = 0
         while True:
-            try:
-                # "Establish connection with client."
-                print("Waiting for client connection...")
-                client_socket, address = server_socket.accept()
+            packet = api.QuicPacket(0, 1, "", 0, 0)
+            client_address = packet.recvfrom(self.socket)
+            # ack = api.QuicPacket(0, 1, "ACK", packet.stream_id, packet.pos_in_stream)
+            # with self.lock:
+            #     ack.sendto(self.socket, client_address)
+            # stream_id += 1
+            self.handle_client(packet, client_address, stream_id)
+            # threading.Thread(target=self.handle_client, args=(packet, client_address, stream_id)).start()
 
-                print(f'Accepted connection from {address}')
 
-                # Create a new thread to handle the client request (allowing multiple clients to connect)
-                thread = threading.Thread(target=client_handler, args=(
-                    client_socket, address))
-                thread.start()
-                threads.append(thread)
-            except KeyboardInterrupt:
-                print("Shutting down...")
-                break
+    def save_file(self, stream_id):
+        print(f"Saving stream {stream_id} to file...")
+        # Sort packets by pos in stream (left value in dict)
+        sorted_packets = sorted(self.streams_data[stream_id], key=lambda x: x[0])
+        
+        # Combine all the packets to form the complete file
+        full_file_data = ""
+        for _, packet in sorted_packets:
+            full_file_data += packet
 
-        for thread in threads:  # Wait for all threads to finish
-            thread.join()
+        # Assuming the file is a text file for testing purposes
+        with open(f"received_file_{stream_id}.txt", "w") as f:
+            f.write(full_file_data)
 
-        while True:
-            # Receive data from the client
-            data, client_address = server_socket.recvfrom(1024)
-            print(f'Received data from {client_address}')
-
-            # Decode the data
-            data = data.decode('utf-8')
-
-            # Process the data
-            response = api.process_request(data)
-
-            # Send the response to the client
-            server_socket.sendto(response.encode('utf-8'), client_address)
-            print(f'Sent response to {client_address}')
-
+        print(f"Stream {stream_id} saved to file received_file_{stream_id}.txt")
+        
+        # # remove stream data from dict
+        # del self.streams_data[stream_id]
 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(

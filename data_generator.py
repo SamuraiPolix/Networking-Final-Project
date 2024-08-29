@@ -4,7 +4,8 @@ import string
 
 FILES_FOLDER = "data_files"
 # 10 MB
-FILE_SIZE = 10 * 1024 * 1024
+FILE_SIZE = 1 * 1024 * 1024
+# FILE_SIZE = 10 * 1024 * 1024
 
 
 # Generate random data of a specific size, default size is 10 MB
@@ -15,6 +16,11 @@ def generate_random_data(data_size: int = FILE_SIZE):
 
 # Generate a number of files with random data, default size is 10 MB per file
 def generate_num_of_files(num_of_files, size_for_each_file: int = FILE_SIZE):
+    # Generate files only if they don't exist
+    # if os.path.exists(FILES_FOLDER):
+    #     print("Files already exist.")
+    #     return [f"{FILES_FOLDER}/file_{i}.txt" for i in range(num_of_files)]
+    print(f"Generating {num_of_files} files with {size_for_each_file} bytes each...")
     # Make sure FILES_FOLDER exists
     if not os.path.exists(FILES_FOLDER):
         os.makedirs(FILES_FOLDER)
@@ -22,8 +28,9 @@ def generate_num_of_files(num_of_files, size_for_each_file: int = FILE_SIZE):
     # Generate data and save it to files
     for i in range(num_of_files):
         data = generate_random_data(size_for_each_file)
-        with open(f"{FILES_FOLDER}/file_{i}.txt", "w") as file:
+        with open(f"{FILES_FOLDER}/file_{i+1}.txt", "w") as file:
             file.write(data)
         # Add the file to the list of files
-        files.append(f"{FILES_FOLDER}/file_{i}.txt")
+        files.append(f"{FILES_FOLDER}/file_{i+1}.txt")
+    print("Files generated.")
     return files
