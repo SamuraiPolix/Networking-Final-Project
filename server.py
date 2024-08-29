@@ -17,21 +17,13 @@ class Server:
         # Assign address and port to the server's socket
         self.socket.bind(server_address)
 
-        self.streams_data = {}  # Dict to store file transfers by stream ID
-        # store for each stream the number of packets and bytes received
-        self.streams_stats = {}
-
         # Used to make sure only one thread can modify a shared data at the same time (the thread that "holds the lock")
         # self.lock = threading.Lock()
 
         self.run()
 
+    ''' Moved printing stats to client.py, to calculate accurately even with packet loss
     def handle_client(self, quic_packet, client_address, stream_id):
-        bytes_received = 0
-        packets_received = 0
-
-        # print(f"Received packet from {client_address}: {quic_packet}")
-
         stream_id = quic_packet.stream_id
         
         if stream_id not in self.streams_data:
@@ -63,18 +55,18 @@ class Server:
             else:
                 self.streams_stats[stream_id]['bytes_received'] += len(quic_packet.payload)
                 self.streams_stats[stream_id]['packets_received'] += 1
-        
+    '''
+
     def run(self):
         print(f"Server running on {self.server_address[0]}:{self.server_address[1]}")
         stream_id = 0
         while True:
-            packet = api.QuicPacket(0, 1, "", 0, 0)
-            client_address = packet.recvfrom(self.socket)
+            packet, client_address = api.recv_packet(self.socket)
             # ack = api.QuicPacket(0, 1, "ACK", packet.stream_id, packet.pos_in_stream)
             # with self.lock:
             #     ack.sendto(self.socket, client_address)
             # stream_id += 1
-            self.handle_client(packet, client_address, stream_id)
+            # self.handle_client(packet, client_address, stream_id)
             # threading.Thread(target=self.handle_client, args=(packet, client_address, stream_id)).start()
 
 
