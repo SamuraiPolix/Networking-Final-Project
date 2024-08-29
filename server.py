@@ -59,9 +59,15 @@ class Server:
 
     def run(self):
         print(f"Server running on {self.server_address[0]}:{self.server_address[1]}")
+        socket.setdefaulttimeout(15)
         stream_id = 0
         while True:
-            packet, client_address = api.recv_packet(self.socket)
+            try:
+                packet, client_address = api.recv_packet(self.socket)
+            except socket.timeout:
+                print("Socket timed out. Closing socket.")
+                self.socket.close()
+                break
             # ack = api.QuicPacket(0, 1, "ACK", packet.stream_id, packet.pos_in_stream)
             # with self.lock:
             #     ack.sendto(self.socket, client_address)

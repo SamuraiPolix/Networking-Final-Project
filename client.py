@@ -153,6 +153,8 @@ class Client:
         # Write average data rate and packet rate to a file, for graphing
         with open("client_stats.txt", "a") as file:
             file.write(f"{len(self.streams_stats)},{avg_data_rate},{avg_packet_rate}\n")
+        
+        self.socket.close()
 
 def calculate_stats(start_time, end_time, bytes_received, packets_received):
     time_elapsed = end_time - start_time
@@ -183,7 +185,7 @@ if __name__ == "__main__":
 
     client = Client((host, port))
 
-    self.run(data_generator.generate_num_of_files(args.files))
+    client.run(data_generator.generate_num_of_files(args.files))
 
 
     # Remove all data_files after sending
