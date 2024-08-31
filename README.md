@@ -3,7 +3,7 @@
 
 [Wireshark recordings](https://drive.google.com/file/d/1EXYuANiR3pqC6cdIF-t0JYZJJLrRIqF-/view?usp=sharing)
 
-README PDF
+[README pdf (HE)](README.pdf)
 
-Assignment
+[Assignment (HE)](ASSIGNMENT.pdf)
 
